@@ -1,0 +1,31 @@
+{
+  "name": "mailer-postageapp",
+  "author": "Alan Plum",
+  "version": "0.1",
+  "description": "Mailer job type for Foxx using PostageApp.",
+
+  "exports": {
+    "mailer": "mailer.js"
+  },
+
+  "defaultDocument": "",
+
+  "lib": ".",
+
+  "configuration": {
+    "apiKey": {
+      "description": "Your PostageApp API key.",
+      "type": "string"
+    },
+    "jobType": {
+      "description": "Name of the job type to register.",
+      "type": "string",
+      "default": "mailer.postageapp"
+    },
+    "maxFailures": {
+      "description": "Maximum number of times to retry a job if it fails.",
+      "type": "integer",
+      "default": 0
+    }
+  }
+}
