@@ -1,6 +1,5 @@
 /*global require, module, applicationContext */
 'use strict';
-
 var apiKey = applicationContext.configuration.apiKey;
 var request = require('org/arangodb/request');
 var crypto = require('org/arangodb/crypto');
@@ -13,7 +12,7 @@ if (data.error) {
 
 var response = request.post('https://api.postageapp.com/v.1.0/send_message.json', {
   body: {
-    api_key: applicationContext.configuration.apiKey,
+    api_key: apiKey,
     uid: crypto.sha1(JSON.stringify(data.value)) + '.' + Date.now(),
     arguments: data.value
   },
@@ -23,6 +22,7 @@ var response = request.post('https://api.postageapp.com/v.1.0/send_message.json'
     'content-type': 'application/json'
   }
 });
+
 if (response.body) {
   if (response.body.response.status !== 'ok') {
     throw new Error(util.format(
