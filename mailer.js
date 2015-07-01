@@ -1,50 +1,38 @@
-/*jshint indent: 2, nomen: true, maxlen: 120 */
-/*global require, exports, applicationContext */
-var queues = require('org/arangodb/foxx').queues,
-  internal = require('internal');
+/*global require, module, applicationContext */
+'use strict';
 
-queues.registerJobType(applicationContext.configuration.jobType, {
-  maxFailures: applicationContext.configuration.maxFailures,
-  execute: function (data) {
-    'use strict';
-    var response, body;
-    response = internal.download(
-      'https://api.postageapp.com/v.1.0/send_message.json',
-      JSON.stringify({
-        api_key: applicationContext.configuration.apiKey,
-        uid: internal.sha1(JSON.stringify(data)) + '.' + Date.now(),
-        arguments: data
-      }),
-      {
-        method: 'POST',
-        headers: {
-          'accept': 'application/json',
-          'content-type': 'application/json'
-        }
-      }
-    );
-    if (response.body) {
-      body = JSON.parse(response.body);
-      if (body.response.status !== 'ok') {
-        throw new Error(
-          'Server returned status ' +
-          body.response.status +
-          ' with message: ' +
-          body.response.message
-        );
-      }
-      return body;
-    } else if (Math.floor(response.code / 100) !== 2) {
-      throw new Error('Server sent an empty response with status ' + response.code);
-    }
+var apiKey = applicationContext.configuration.apiKey;
+var request = require('org/arangodb/request');
+var crypto = require('org/arangodb/crypto');
+var util = require('util');
+
+var data = require('./exports').schema.validate(applicationContext.argv[0]);
+if (data.error) {
+  throw data.error;
+}
+
+var response = request.post('https://api.postageapp.com/v.1.0/send_message.json', {
+  body: {
+    api_key: applicationContext.configuration.apiKey,
+    uid: crypto.sha1(JSON.stringify(data.value)) + '.' + Date.now(),
+    arguments: data.value
+  },
+  json: true,
+  headers: {
+    'accept': 'application/json',
+    'content-type': 'application/json'
   }
 });
+if (response.body) {
+  if (response.body.response.status !== 'ok') {
+    throw new Error(util.format(
+      'Server returned status %s with message: %s',
+      response.body.response.status,
+      response.body.response.message
+    ));
+  }
+} else if (Math.floor(response.statusCode / 100) !== 2) {
+  throw new Error('Server sent an empty response with status ' + response.statusCode);
+}
 
-Object.defineProperty(exports, 'jobType', {
-  get: function () {
-    'use strict';
-    return applicationContext.configuration.jobType;
-  },
-  configurable: false,
-  enumerable: true
-});
+module.exports = response.body;
